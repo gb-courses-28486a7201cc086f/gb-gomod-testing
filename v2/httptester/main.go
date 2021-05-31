@@ -73,7 +73,7 @@ func produceJobs(config *Config, jobsChan chan<- workerpool.Job) {
 			Client:  client,
 			URL:     config.URL,
 			Method:  config.Method,
-			Payload: bytes.NewBuffer(config.Payload),
+			Payload: bytes.NewReader([]byte{}),
 		}
 
 		select {
@@ -99,7 +99,11 @@ func main() {
 	}
 	fmt.Printf("Starting test for %s %s\n\n", config.Method, config.URL)
 
-	pool, _ := workerpool.NewPool(config.Workers)
+	pool, err := workerpool.NewPool(config.Workers)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(255)
+	}
 
 	wg := &sync.WaitGroup{}
 	wg.Add(1)

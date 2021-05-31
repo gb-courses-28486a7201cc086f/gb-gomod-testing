@@ -36,7 +36,7 @@ type TestURLJob struct {
 	Client  *http.Client
 	URL     string
 	Method  string
-	Payload *bytes.Buffer
+	Payload *bytes.Reader
 }
 
 // Run method executes test case using receiver attributes
@@ -51,7 +51,7 @@ func (tj *TestURLJob) Run() *workerpool.JobResult {
 	}
 	start := time.Now()
 	resp, err := tj.Client.Do(req)
-	execTime := time.Until(start)
+	execTime := time.Since(start)
 	if err != nil {
 		return &workerpool.JobResult{
 			Code:     -1,
@@ -102,7 +102,7 @@ func (jr *JobReport) Update(data *workerpool.JobResult) {
 func (jr *JobReport) AvgTimeReport() string {
 	if jr.reqSuccess > 0 {
 		avgSuccessTime := jr.reqSuccessTotalTime.Seconds() / float64(jr.reqSuccess)
-		return fmt.Sprintf("Avg response time, sec: %.3f", avgSuccessTime)
+		return fmt.Sprintf("%d requests: avg response time, sec: %.3f", jr.reqSuccess, avgSuccessTime)
 	}
 	return ""
 }
@@ -111,12 +111,16 @@ func (jr *JobReport) AvgTimeReport() string {
 // and creates formatted message
 func (jr *JobReport) FinalReport() (msg string) {
 	sentReq := float64(jr.reqTotal - jr.reqFailed)
-	testExecTime := float64(time.Until(jr.startTime))
+	testExecTime := time.Since(jr.startTime).Seconds()
 	rpsSuccess := float64(jr.reqSuccess) / testExecTime
 
-	msg += fmt.Sprintf("\nResults:\nSent %.0f requests, %d success", sentReq, jr.reqSuccess)
-	msg += fmt.Sprintf("\nServer errors by code: %v\n", jr.reqServerErrors)
-	msg += fmt.Sprintf("\nRPS via success: %.0f\n", rpsSuccess)
+	//runtime.Breakpoint()
+
+	msg += fmt.Sprintf("Results:\nSent %.0f requests, %d success", sentReq, jr.reqSuccess)
+	if len(jr.reqServerErrors) > 0 {
+		msg += fmt.Sprintf("\nServer errors by code: %v\n", jr.reqServerErrors)
+	}
+	msg += fmt.Sprintf("\nRPS via success: %.000f\n", rpsSuccess)
 	return msg
 }
 
@@ -127,19 +131,27 @@ func JobReporter(wg *sync.WaitGroup, resultsChan <-chan *workerpool.JobResult) {
 
 	report := &JobReport{
 		reqServerErrors: make(map[int]int),
+		startTime:       time.Now(),
 	}
 
 	// setup ticker to print sub results
 	ticker := time.NewTicker(time.Second)
 
-	running := true
-	for running {
+	// cleanup
+	defer func() {
+		// all results done -> ticker can stop
+		ticker.Stop()
+		// print final result
+		log.Println(report.AvgTimeReport())
+		log.Println(report.FinalReport())
+	}()
+
+	for {
 		select {
 		case v, ok := <-resultsChan:
 			// resultsChan closed => stop report
 			if !ok {
-				running = false
-				break
+				return
 			}
 			report.Update(v)
 		case <-ticker.C:
@@ -148,11 +160,4 @@ func JobReporter(wg *sync.WaitGroup, resultsChan <-chan *workerpool.JobResult) {
 			}
 		}
 	}
-
-	// all results done -> ticker can stop
-	ticker.Stop()
-
-	// print final result
-	log.Println(report.AvgTimeReport())
-	log.Println(report.FinalReport())
 }
