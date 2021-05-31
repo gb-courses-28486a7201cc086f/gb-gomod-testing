@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gb-courses-28486a7201cc086f/gb-gomod-testing/httptester/workerpool"
+	"github.com/gb-courses-28486a7201cc086f/gb-gomod-testing/v2/httptester/workerpool"
 )
 
 var (
