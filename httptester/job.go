@@ -145,7 +145,7 @@ func JobReporter(wg *sync.WaitGroup, resultsChan <-chan *workerpool.JobResult) {
 			report.Update(v)
 		case <-ticker.C:
 			if msg := report.AvgTimeReport(); msg != "" {
-				log.Println(msg)
+				log.Info().Msg(msg)
 			}
 		}
 	}
@@ -154,6 +154,6 @@ func JobReporter(wg *sync.WaitGroup, resultsChan <-chan *workerpool.JobResult) {
 	ticker.Stop()
 
 	// print final result
-	log.Println(report.AvgTimeReport())
-	log.Println(report.FinalReport())
+	log.Info().Msg(report.AvgTimeReport())
+	log.Info().Msg(report.FinalReport())
 }
