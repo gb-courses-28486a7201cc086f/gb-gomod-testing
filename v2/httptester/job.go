@@ -28,9 +28,9 @@ type Config struct {
 	HTTPTimeOut time.Duration
 }
 
-// TestURLJob represents a single unit of work.
+// TestURLJob represents a single unit of work, implements
+// workerpoll.Job interface.
 // TestURLJob is self-contained - all data for test stored inside
-// Workers executes TestURLJob.Run() method to make test
 type TestURLJob struct {
 	ID      int
 	Client  *http.Client

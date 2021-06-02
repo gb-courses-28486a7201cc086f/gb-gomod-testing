@@ -1,6 +1,10 @@
 // Package main implements cli-tool to send parallel
 // HTTP requests to specified URL and calculate average response time.
 //
+// Usage:
+//
+// 	httptester [flags] -url <url>
+//
 // Run tool with -h parameter to see all cli flags
 package main
 
